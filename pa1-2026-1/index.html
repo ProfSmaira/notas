@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Redirecionando...</title>
+    <script>
+        // --- EDITE APENAS ESTA LINHA ---
+        const URL_GOOGLE_SCRIPT = "https://script.google.com/macros/s/AKfycbz3a6pmevKs7xLd7krmL1mJKaj-Skdf2xrbJaBYySgTItvDueoaGuxElGqZEKYGYy8I/exec";
+        // -------------------------------
+
+        window.onload = function() {
+            // Pega os parâmetros da URL atual (ex: ?token=123)
+            const params = window.location.search;
+            
+            // Monta a URL final e redireciona
+            const destinoFinal = URL_GOOGLE_SCRIPT + params;
+            window.location.href = destinoFinal;
+        };
+    </script>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .loader { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="loader">
+        <p>Aguarde, redirecionando para o seu dashboard...</p>
+        <p><small>Se não for redirecionado automaticamente, <a id="manual" href="#">clique aqui</a>.</small></p>
+    </div>
+    <script>
+        // Garante que o link manual também tenha os parâmetros
+        document.getElementById('manual').href = URL_GOOGLE_SCRIPT + window.location.search;
+    </script>
+</body>
+</html>
