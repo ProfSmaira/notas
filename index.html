@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Acadêmico</title>
+    <script>
+        // --- CENTRAL DE DEPLOYS ---
+        // Organize por Ano -> Semestre -> Disciplina
+        const DEPLOYS = {
+            "2026": {
+                "1": {
+                    "PA1": "AKfycbz3a6pmevKs7xLd7krmL1mJKaj-Skdf2xrbJaBYySgTItvDueoaGuxElGqZEKYGYy8I",
+                    "ORI": "AKfycbyko1Mc0T0VDDj1VpEP8PV2fW6mpBhhjpbgBxnLqL6yFdjLD4NllMSkUG_glVv_PaYW"
+                },
+                "2": {}
+            },
+        };
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Captura os parâmetros solicitados
+            const subject = urlParams.get('subject');
+            const year = urlParams.get('year') || "2026"; // Padrão para o ano atual
+            const semester = urlParams.get('semester') || "1"; // Padrão para o semestre atual
+            const token = urlParams.get('token');
+
+            // Verifica se a disciplina existe no mapeamento
+            if (subject && DEPLOYS[year] && DEPLOYS[year][semester] && DEPLOYS[year][semester][subject]) {
+                const deploymentId = DEPLOYS[year][semester][subject];
+                const baseUrl = `https://script.google.com/macros/s/${deploymentId}/exec`;
+                
+                urlParams.delete('subject');
+                urlParams.delete('year');
+                urlParams.delete('semester');
+                
+                const finalUrl = baseUrl + (urlParams.toString() ? "?" + urlParams.toString() : "");
+                window.location.href = finalUrl;
+            } else {
+                document.getElementById('status').innerHTML = "<h2>Disciplina ou período não encontrado.</h2><p>Verifique o link enviado pelo professor.</p>";
+                document.querySelector('.spinner').style.display = 'none';
+            }
+        };
+    </script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #005599; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1.5rem; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        h1 { font-size: 1.2rem; color: #333; margin-bottom: 0.5rem; }
+        p { color: #666; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="spinner"></div>
+        <div id="status">
+            <h1>Portal Prof. Smaira</h1>
+            <p>Redirecionando para o sistema de notas...</p>
+        </div>
+    </div>
+</body>
+</html>
