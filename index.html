@@ -129,7 +129,7 @@
             const ano = agora.getFullYear().toString();
             // Jan-Jun (meses 0 a 5) -> "1" | Jul-Dez (meses 6 a 11) -> "2"
             const semestre = (agora.getMonth() <= 5) ? "1" : "2";
-            return { ano, semestre };
+            return { "ano": ano, "semestre": semestre };
         }
 
         window.onload = function() {
