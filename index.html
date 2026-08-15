@@ -3,10 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Acadêmico</title>
+    <title>Portal Acadêmico - Seleção de Disciplina</title>
+    <style>
+        :root {
+            --ufscar-blue: #004a8e;
+            --bg-gray: #f0f2f5;
+            --text-main: #333;
+        }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-gray); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .card { 
+            background: white; 
+            padding: 2.5rem; 
+            border-radius: 15px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08); 
+            text-align: center; 
+            max-width: 420px; 
+            width: 100%;
+            border-top: 6px solid var(--ufscar-blue);
+        }
+        .spinner { 
+            border: 4px solid #f3f3f3; 
+            border-top: 4px solid var(--ufscar-blue); 
+            border-radius: 50%; 
+            width: 40px; 
+            height: 40px; 
+            animation: spin 1s linear infinite; 
+            margin: 0 auto 1.5rem; 
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        h1 { font-size: 1.5rem; color: var(--ufscar-blue); margin-top: 0; margin-bottom: 0.5rem; }
+        p.subtitle { color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+        .form-group { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+        label { font-size: 0.85rem; font-weight: 600; color: #555; }
+        
+        select, button {
+            width: 100%;
+            padding: 12px;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            border: 2px solid #e1e4e8;
+            box-sizing: border-box;
+        }
+        select:focus { outline: none; border-color: var(--ufscar-blue); }
+
+        .btn-submit {
+            background-color: var(--ufscar-blue);
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+        .btn-submit:hover { background-color: #00366b; }
+        
+        .footer { font-size: 0.75rem; color: #aaa; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div id="loadingState">
+            <div class="spinner"></div>
+            <h1>Portal Acadêmico</h1>
+            <p class="subtitle">Redirecionando para o seu dashboard...</p>
+        </div>
+
+        <div id="selectState" style="display: none;">
+            <h1>Portal Acadêmico</h1>
+            <p class="subtitle">Selecione o período e a disciplina para acessar o painel de notas:</p>
+
+            <form id="selectionForm" class="form-group">
+                <div>
+                    <label for="yearSelect">Ano Letivo</label>
+                    <select id="yearSelect" required></select>
+                </div>
+
+                <div>
+                    <label for="semesterSelect">Semestre</label>
+                    <select id="semesterSelect" required></select>
+                </div>
+
+                <div>
+                    <label for="subjectSelect">Disciplina</label>
+                    <select id="subjectSelect" required></select>
+                </div>
+
+                <button type="submit" class="btn-submit">Acessar Painel →</button>
+            </form>
+        </div>
+
+        <div class="footer">Prof. André de Freitas Smaira</div>
+    </div>
+
     <script>
         // --- CENTRAL DE DEPLOYS ---
-        // Organize por Ano -> Semestre -> Disciplina
+        // Organize por Ano -> Semestre -> Disciplina -> ID do Apps Script
         const DEPLOYS = {
             "2026": {
                 "1": {
@@ -14,54 +117,88 @@
                     "ORI": "AKfycbyko1Mc0T0VDDj1VpEP8PV2fW6mpBhhjpbgBxnLqL6yFdjLD4NllMSkUG_glVv_PaYW"
                 },
                 "2": {
-                    "TBDES": "",
-                    "IAS": ""
+                    "TBDES": "SEU_DEPLOY_ID_DA_TBDES_AQUI",
+                    "IAS": "SEU_DEPLOY_ID_DA_IAS_AQUI"
                 }
-            },
+            }
         };
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             
-            // Captura os parâmetros solicitados
             const subject = urlParams.get('subject');
-            const year = urlParams.get('year') || "2026"; // Padrão para o ano atual
-            const semester = urlParams.get('semester') || "1"; // Padrão para o semestre atual
-            const token = urlParams.get('token');
+            const year = urlParams.get('year') || "2026";
+            const semester = urlParams.get('semester') || "1";
 
-            // Verifica se a disciplina existe no mapeamento
+            // Se recebeu parâmetro válido via URL, redireciona direto
             if (subject && DEPLOYS[year] && DEPLOYS[year][semester] && DEPLOYS[year][semester][subject]) {
-                const deploymentId = DEPLOYS[year][semester][subject];
-                const baseUrl = `https://script.google.com/macros/s/${deploymentId}/exec`;
-                
-                urlParams.delete('subject');
-                urlParams.delete('year');
-                urlParams.delete('semester');
-                
-                const finalUrl = baseUrl + (urlParams.toString() ? "?" + urlParams.toString() : "");
-                window.location.href = finalUrl;
+                redirecionar(DEPLOYS[year][semester][subject], urlParams);
             } else {
-                document.getElementById('status').innerHTML = "<h2>Disciplina ou período não encontrado.</h2><p>Verifique o link enviado pelo professor.</p>";
-                document.querySelector('.spinner').style.display = 'none';
+                // Caso contrário, esconde o spinner e renderiza o formulário de escolha
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('selectState').style.display = 'block';
+                inicializarFormulario();
             }
         };
+
+        function redirecionar(deploymentId, params) {
+            const baseUrl = `https://script.google.com/macros/s/${deploymentId}/exec`;
+            
+            // Remove os parâmetros do roteador antes de repassar pro Apps Script
+            params.delete('subject');
+            params.delete('year');
+            params.delete('semester');
+            
+            const finalUrl = baseUrl + (params.toString() ? "?" + params.toString() : "");
+            window.location.href = finalUrl;
+        }
+
+        // Lógica para preencher os selects dinamicamente a partir do objeto DEPLOYS
+        function inicializarFormulario() {
+            const yearSelect = document.getElementById('yearSelect');
+            const semesterSelect = document.getElementById('semesterSelect');
+            const subjectSelect = document.getElementById('subjectSelect');
+
+            // Preenche os Anos
+            const anos = Object.keys(DEPLOYS).sort().reverse();
+            yearSelect.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join('');
+
+            function atualizarSemestres() {
+                const anoSel = yearSelect.value;
+                const semestres = Object.keys(DEPLOYS[anoSel] || {});
+                semesterSelect.innerHTML = semestres.map(s => `<option value="${s}">${s}º Semestre</option>`).join('');
+                atualizarDisciplinas();
+            }
+
+            function atualizarDisciplinas() {
+                const anoSel = yearSelect.value;
+                const semSel = semesterSelect.value;
+                const disciplinas = Object.keys((DEPLOYS[anoSel] && DEPLOYS[anoSel][semSel]) || {});
+                subjectSelect.innerHTML = disciplinas.map(d => `<option value="${d}">${d}</option>`).join('');
+            }
+
+            yearSelect.addEventListener('change', atualizarSemestres);
+            semesterSelect.addEventListener('change', atualizarDisciplinas);
+
+            // Executa a primeira vez
+            atualizarSemestres();
+
+            // Ao submeter o formulário
+            document.getElementById('selectionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const y = yearSelect.value;
+                const s = semesterSelect.value;
+                const sub = subjectSelect.value;
+
+                if (DEPLOYS[y] && DEPLOYS[y][s] && DEPLOYS[y][s][sub]) {
+                    const deployId = DEPLOYS[y][s][sub];
+                    const urlParams = new URLSearchParams(window.location.search);
+                    redirecionar(deployId, urlParams);
+                } else {
+                    alert('Deploy não encontrado para a disciplina selecionada.');
+                }
+            });
+        }
     </script>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #005599; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1.5rem; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        h1 { font-size: 1.2rem; color: #333; margin-bottom: 0.5rem; }
-        p { color: #666; font-size: 0.9rem; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <div class="spinner"></div>
-        <div id="status">
-            <h1>Portal do Aluno</h1>
-            <p>Redirecionando para o seu dashboard...</p>
-        </div>
-    </div>
 </body>
 </html>
