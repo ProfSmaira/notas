@@ -127,7 +127,7 @@
         function obterPeriodoAtual() {
             const agora = new Date();
             const ano = agora.getFullYear().toString();
-            // Mês 0 a 5 (Jan-Jun) -> 1º Semestre | Mês 6 a 11 (Jul-Dez) -> 2º Semestre
+            // Jan-Jun (meses 0 a 5) -> "1" | Jul-Dez (meses 6 a 11) -> "2"
             const semestre = (agora.getMonth() <= 5) ? "1" : "2";
             return { ano, semestre };
         }
@@ -137,15 +137,14 @@
             const periodoAtual = obterPeriodoAtual();
             
             const subject = urlParams.get('subject');
-            // Se não vier na URL, usa o Ano e Semestre atuais calculados na hora
             const year = urlParams.get('year') || periodoAtual.ano;
             const semester = urlParams.get('semester') || periodoAtual.semestre;
 
-            // Se recebeu parâmetro válido via URL, redireciona direto
+            // Se recebeu parâmetro e o Deploy ID não é vazio, redireciona direto
             if (subject && DEPLOYS[year] && DEPLOYS[year][semester] && DEPLOYS[year][semester][subject]) {
                 redirecionar(DEPLOYS[year][semester][subject], urlParams);
             } else {
-                // Caso contrário, mostra o formulário de escolha
+                // Caso contrário, mostra o formulário pré-selecionando o período atual
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('selectState').style.display = 'block';
                 inicializarFormulario(periodoAtual);
@@ -155,7 +154,6 @@
         function redirecionar(deploymentId, params) {
             const baseUrl = `https://script.google.com/macros/s/${deploymentId}/exec`;
             
-            // Remove os parâmetros do roteador antes de repassar pro Apps Script
             params.delete('subject');
             params.delete('year');
             params.delete('semester');
@@ -169,24 +167,27 @@
             const semesterSelect = document.getElementById('semesterSelect');
             const subjectSelect = document.getElementById('subjectSelect');
 
-            // Preenche os Anos (do mais recente para o mais antigo)
             const anos = Object.keys(DEPLOYS).sort().reverse();
-            yearSelect.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join('');
-            
-            // Pré-seleciona o ano atual se existir na base, senão o ano mais recente
-            if (DEPLOYS[periodoAtual.ano]) {
-                yearSelect.value = periodoAtual.ano;
-            }
+            const anoPadrao = DEPLOYS[periodoAtual.ano] ? periodoAtual.ano : anos[0];
+
+            // Injeta o atributo 'selected' diretamente no HTML
+            yearSelect.innerHTML = anos.map(a => 
+                `<option value="${a}" ${a === anoPadrao ? 'selected' : ''}>${a}</option>`
+            ).join('');
 
             function atualizarSemestres() {
                 const anoSel = yearSelect.value;
-                const semestres = Object.keys(DEPLOYS[anoSel] || {}).sort().reverse();
-                semesterSelect.innerHTML = semestres.map(s => `<option value="${s}">${s}º Semestre</option>`).join('');
+                const semestresDisponiveis = Object.keys(DEPLOYS[anoSel] || {}).sort().reverse();
                 
-                // Tenta pré-selecionar o semestre atual se estiver disponível
-                if (DEPLOYS[anoSel] && DEPLOYS[anoSel][periodoAtual.semestre]) {
-                    semesterSelect.value = periodoAtual.semestre;
-                }
+                // Escolhe o semestre atual se ele existir no ano selecionado
+                const semPadrao = (DEPLOYS[anoSel] && DEPLOYS[anoSel][periodoAtual.semestre]) 
+                    ? periodoAtual.semestre 
+                    : semestresDisponiveis[0];
+
+                // Injeta 'selected' diretamente na tag <option>
+                semesterSelect.innerHTML = semestresDisponiveis.map(s => 
+                    `<option value="${s}" ${s === semPadrao ? 'selected' : ''}>${s}º Semestre</option>`
+                ).join('');
                 
                 atualizarDisciplinas();
             }
@@ -195,7 +196,10 @@
                 const anoSel = yearSelect.value;
                 const semSel = semesterSelect.value;
                 const disciplinas = Object.keys((DEPLOYS[anoSel] && DEPLOYS[anoSel][semSel]) || {});
-                subjectSelect.innerHTML = disciplinas.map(d => `<option value="${d}">${d}</option>`).join('');
+                
+                subjectSelect.innerHTML = disciplinas.map(d => 
+                    `<option value="${d}">${d}</option>`
+                ).join('');
             }
 
             yearSelect.addEventListener('change', atualizarSemestres);
@@ -214,7 +218,7 @@
                     const urlParams = new URLSearchParams(window.location.search);
                     redirecionar(deployId, urlParams);
                 } else {
-                    alert('Deploy não encontrado para a disciplina selecionada.');
+                    alert('Deploy não encontrado ou ID ainda não preenchido para esta disciplina.');
                 }
             });
         }
