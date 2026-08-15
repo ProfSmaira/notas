@@ -123,12 +123,21 @@
             }
         };
 
+        function obterPeriodoAtual() {
+            const agora = new Date();
+            const ano = agora.getFullYear().toString();
+            // Mês 0 a 5 (Jan-Jun) -> 1º Semestre | Mês 6 a 11 (Jul-Dez) -> 2º Semestre
+            const semestre = (agora.getMonth() <= 5) ? "1" : "2";
+            return { ano, semestre };
+        }
+
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
+            const periodoAtual = obterPeriodoAtual();
             
             const subject = urlParams.get('subject');
-            const year = urlParams.get('year') || "2026";
-            const semester = urlParams.get('semester') || "1";
+            const year = urlParams.get('year') || periodoAtual.ano;
+            const semester = urlParams.get('semester') || periodoAtual.semestre;
 
             // Se recebeu parâmetro válido via URL, redireciona direto
             if (subject && DEPLOYS[year] && DEPLOYS[year][semester] && DEPLOYS[year][semester][subject]) {
