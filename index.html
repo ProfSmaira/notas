@@ -123,6 +123,7 @@
             }
         };
 
+        // Função utilitária para determinar Ano e Semestre atuais dinamicamente
         function obterPeriodoAtual() {
             const agora = new Date();
             const ano = agora.getFullYear().toString();
@@ -136,6 +137,7 @@
             const periodoAtual = obterPeriodoAtual();
             
             const subject = urlParams.get('subject');
+            // Se não vier na URL, usa o Ano e Semestre atuais calculados na hora
             const year = urlParams.get('year') || periodoAtual.ano;
             const semester = urlParams.get('semester') || periodoAtual.semestre;
 
@@ -143,10 +145,10 @@
             if (subject && DEPLOYS[year] && DEPLOYS[year][semester] && DEPLOYS[year][semester][subject]) {
                 redirecionar(DEPLOYS[year][semester][subject], urlParams);
             } else {
-                // Caso contrário, esconde o spinner e renderiza o formulário de escolha
+                // Caso contrário, mostra o formulário de escolha
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('selectState').style.display = 'block';
-                inicializarFormulario();
+                inicializarFormulario(periodoAtual);
             }
         };
 
@@ -162,20 +164,30 @@
             window.location.href = finalUrl;
         }
 
-        // Lógica para preencher os selects dinamicamente a partir do objeto DEPLOYS
-        function inicializarFormulario() {
+        function inicializarFormulario(periodoAtual) {
             const yearSelect = document.getElementById('yearSelect');
             const semesterSelect = document.getElementById('semesterSelect');
             const subjectSelect = document.getElementById('subjectSelect');
 
-            // Preenche os Anos
+            // Preenche os Anos (do mais recente para o mais antigo)
             const anos = Object.keys(DEPLOYS).sort().reverse();
             yearSelect.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join('');
+            
+            // Pré-seleciona o ano atual se existir na base, senão o ano mais recente
+            if (DEPLOYS[periodoAtual.ano]) {
+                yearSelect.value = periodoAtual.ano;
+            }
 
             function atualizarSemestres() {
                 const anoSel = yearSelect.value;
-                const semestres = Object.keys(DEPLOYS[anoSel] || {});
+                const semestres = Object.keys(DEPLOYS[anoSel] || {}).sort().reverse();
                 semesterSelect.innerHTML = semestres.map(s => `<option value="${s}">${s}º Semestre</option>`).join('');
+                
+                // Tenta pré-selecionar o semestre atual se estiver disponível
+                if (DEPLOYS[anoSel] && DEPLOYS[anoSel][periodoAtual.semestre]) {
+                    semesterSelect.value = periodoAtual.semestre;
+                }
+                
                 atualizarDisciplinas();
             }
 
@@ -189,10 +201,8 @@
             yearSelect.addEventListener('change', atualizarSemestres);
             semesterSelect.addEventListener('change', atualizarDisciplinas);
 
-            // Executa a primeira vez
             atualizarSemestres();
 
-            // Ao submeter o formulário
             document.getElementById('selectionForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 const y = yearSelect.value;
