@@ -139,12 +139,21 @@
             const subject = urlParams.get('subject');
             const year = urlParams.get('year') || periodoAtual.ano;
             const semester = urlParams.get('semester') || periodoAtual.semestre;
+            const token = urlParams.get('token'); // Pega o token se existir
 
-            // Se recebeu parâmetro e o Deploy ID não é vazio, redireciona direto
+            // LÓGICA DE ROTEAMENTO:
+            // Só redireciona direto se a disciplina for válida NO dicionário
             if (subject && DEPLOYS[year] && DEPLOYS[year][semester] && DEPLOYS[year][semester][subject]) {
-                redirecionar(DEPLOYS[year][semester][subject], urlParams);
+                const deployId = DEPLOYS[year][semester][subject];
+                
+                // Se tiver token, muda a mensagem visual antes de ir (Link Mágico)
+                if (token) {
+                    document.getElementById('loadingState').innerHTML = '<div class="spinner"></div><h1>Autenticando</h1><p class="subtitle">Acessando seu painel de notas...</p>';
+                }
+                
+                redirecionar(deployId, urlParams);
             } else {
-                // Caso contrário, mostra o formulário pré-selecionando o período atual
+                // Caso contrário (URL limpa ou com erro), mostra o formulário de seleção
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('selectState').style.display = 'block';
                 inicializarFormulario(periodoAtual);
@@ -154,10 +163,12 @@
         function redirecionar(deploymentId, params) {
             const baseUrl = `https://script.google.com/macros/s/${deploymentId}/exec`;
             
+            // Removemos os parâmetros de roteamento para deixar a URL pro GAS limpa
             params.delete('subject');
             params.delete('year');
             params.delete('semester');
             
+            // Mas mantemos o Token e o Repository/Run, que o GAS usa!
             const finalUrl = baseUrl + (params.toString() ? "?" + params.toString() : "");
             window.location.href = finalUrl;
         }
@@ -207,6 +218,7 @@
 
             atualizarSemestres();
 
+            // Quando o aluno clica em "Acessar Painel" no dropdown
             document.getElementById('selectionForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 const y = yearSelect.value;
@@ -215,41 +227,15 @@
 
                 if (DEPLOYS[y] && DEPLOYS[y][s] && DEPLOYS[y][s][sub]) {
                     const deployId = DEPLOYS[y][s][sub];
-                    const urlParams = new URLSearchParams(window.location.search);
-                    redirecionar(deployId, urlParams);
+                    
+                    // Como não tem token, a requisição no GAS (doGet) vai abrir 
+                    // automaticamente a página de recuperar Link Mágico/RA!
+                    redirecionar(deployId, new URLSearchParams());
                 } else {
                     alert('Deploy não encontrado ou ID ainda não preenchido para esta disciplina.');
                 }
             });
         }
-    </script>
-    <script>
-      // 1. Lógica do "Guarda de Trânsito" (Roda assim que a página abre)
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
-      
-      // Coloque a URL do seu Web App (GAS) aqui
-      const URL_DO_GAS = "https://script.google.com/macros/s/SEU_ID_DO_GAS_AQUI/exec";
-
-      if (token) {
-        // Se tem token, o aluno veio do email! 
-        // Esconde o container inteiro do formulário
-        document.querySelector('.container').style.display = 'none';
-        
-        // Mostra um aviso na tela enquanto redireciona
-        document.body.innerHTML = '<h3 style="text-align:center; color:#004a8e; margin-top:20vh;">Autenticando... Redirecionando para o seu boletim.</h3>';
-        
-        // Redireciona passando os mesmos parâmetros da URL
-        window.location.href = URL_DO_GAS + window.location.search;
-      }
-
-      // =================================================================
-      // 2. Lógica do Formulário de Recuperação (Só roda se NÃO tiver token e o aluno clicar)
-      // =================================================================
-      document.getElementById('recoveryForm').addEventListener('submit', function(e) {
-        e.preventDefault(); 
-        // ... (todo aquele seu código do google.script.run.reenviarToken fica aqui) ...
-      });
     </script>
 </body>
 </html>
