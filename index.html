@@ -223,5 +223,33 @@
             });
         }
     </script>
+    <script>
+      // 1. Lógica do "Guarda de Trânsito" (Roda assim que a página abre)
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      
+      // Coloque a URL do seu Web App (GAS) aqui
+      const URL_DO_GAS = "https://script.google.com/macros/s/SEU_ID_DO_GAS_AQUI/exec";
+
+      if (token) {
+        // Se tem token, o aluno veio do email! 
+        // Esconde o container inteiro do formulário
+        document.querySelector('.container').style.display = 'none';
+        
+        // Mostra um aviso na tela enquanto redireciona
+        document.body.innerHTML = '<h3 style="text-align:center; color:#004a8e; margin-top:20vh;">Autenticando... Redirecionando para o seu boletim.</h3>';
+        
+        // Redireciona passando os mesmos parâmetros da URL
+        window.location.href = URL_DO_GAS + window.location.search;
+      }
+
+      // =================================================================
+      // 2. Lógica do Formulário de Recuperação (Só roda se NÃO tiver token e o aluno clicar)
+      // =================================================================
+      document.getElementById('recoveryForm').addEventListener('submit', function(e) {
+        e.preventDefault(); 
+        // ... (todo aquele seu código do google.script.run.reenviarToken fica aqui) ...
+      });
+    </script>
 </body>
 </html>
